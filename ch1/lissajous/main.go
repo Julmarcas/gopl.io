@@ -3,7 +3,6 @@
 
 // Run with "web" command-line argument for web server.
 // See page 13.
-//!+main
 
 // Lissajous generates GIF animations of random Lissajous figures.
 package main
@@ -13,22 +12,17 @@ import (
 	"image/color"
 	"image/gif"
 	"io"
+	"log"
 	"math"
 	"math/rand"
-	"os"
-)
-
-//!-main
-// Packages not needed by version in book.
-import (
-	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
-//!+main
+// Packages not needed by version in book.
 
-var palette = []color.Color{color.White, color.Black}
+var palette = []color.Color{color.Black, color.RGBA{0, 255, 0, 1}, color.RGBA{255, 0, 0, 1}, color.RGBA{0, 0, 255, 1}}
 
 const (
 	whiteIndex = 0 // first color in palette
@@ -36,23 +30,19 @@ const (
 )
 
 func main() {
-	//!-main
 	// The sequence of images is deterministic unless we seed
 	// the pseudo-random number generator using the current time.
 	// Thanks to Randall McPherson for pointing out the omission.
 	rand.Seed(time.Now().UTC().UnixNano())
 
 	if len(os.Args) > 1 && os.Args[1] == "web" {
-		//!+http
 		handler := func(w http.ResponseWriter, r *http.Request) {
 			lissajous(w)
 		}
 		http.HandleFunc("/", handler)
-		//!-http
 		log.Fatal(http.ListenAndServe("localhost:8000", nil))
 		return
 	}
-	//!+main
 	lissajous(os.Stdout)
 }
 
@@ -73,8 +63,7 @@ func lissajous(out io.Writer) {
 		for t := 0.0; t < cycles*2*math.Pi; t += res {
 			x := math.Sin(t)
 			y := math.Sin(t*freq + phase)
-			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5),
-				blackIndex)
+			img.SetColorIndex(size+int(x*size+0.5), size+int(y*size+0.5), uint8(rand.Intn(len(palette))))
 		}
 		phase += 0.1
 		anim.Delay = append(anim.Delay, delay)
@@ -82,5 +71,3 @@ func lissajous(out io.Writer) {
 	}
 	gif.EncodeAll(out, &anim) // NOTE: ignoring encoding errors
 }
-
-//!-main
