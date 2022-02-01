@@ -10,7 +10,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
@@ -35,13 +34,21 @@ func fetch(url string, ch chan<- string) {
 		ch <- fmt.Sprint(err) // send to channel ch
 		return
 	}
-
-	nbytes, err := io.Copy(ioutil.Discard, resp.Body)
+	filename := fmt.Sprintf("%s.html", url)
+	f, err := os.Create(filename)
+	if err != nil {
+		ch <- fmt.Sprintf("while writing the file %s: %v", filename, err)
+		return
+	}
+	defer f.Close()
+	nbytes, err := io.Copy(f, resp.Body)
 	resp.Body.Close() // don't leak resources
 	if err != nil {
 		ch <- fmt.Sprintf("while reading %s: %v", url, err)
 		return
 	}
+	f.Sync()
+
 	secs := time.Since(start).Seconds()
 	ch <- fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
 }
